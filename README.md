@@ -1,5 +1,5 @@
 # CUB
-This repository contains core codes for our paper on "Dissimilation of synonymous codon usage bias in virus-host coevolution due to translational selection", as well as the processed data to facilitate direct reproduction of main figures and some supplementary figures.  Please refer to our Nature Ecology & Evolution paper for the detailed explanation of the variables appeared in the codes.
+This repository contains core codes for our paper on "Dissimilation of synonymous codon usage bias in virus-host coevolution due to translational selection", as well as the processed data to facilitate direct reproduction of main figures and some supplementary figures.  Please refer to our paper for the detailed explanation of the variables appeared in the codes.
 
 1)Fig.1, Fig.S2, and Fig.S4
 
