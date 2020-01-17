@@ -15,7 +15,15 @@ The final Rdatasets of fig1, figs2, and figs4 are combinded in "combined_allfig1
 The final datasets for fig2 and figs5A-B were saved as "finaldata_forfig2.correlations.Rdata".  Using this data, you can get the
 translation seletion landscape of 61 codons caused by virus infection."aa.eight.humangeneforfig2.Rdata" is the finally data for fig.5c.  This was used to show that the pattern observed in fig2 and figs5 was not caused by the small viral genome. 
 
-3)
+3)fig3 and figs6-8
+
+"fig3.R" is the code for fig3 and figs6-8.  Using this code, you can deeply understand the trans regulation of CUB per unit expression of exogenous genes, cis-regulatory effect of CUB, net trans-regulatory effect of CUB by total expression of exogenous genes, and the point of "only high engough expression of exogenous gene can make significantly translation load".
+
+All final data used to draw the plot was combined in "allcombinedfig3.Rdata".
+
+4)fig4 and figs9
+
+
 
 
 
