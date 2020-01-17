@@ -6,7 +6,7 @@ Here are all the codes for the paper "Dissimilation of synonymous codon usage bi
 The final datasets for fig2 and figs5A-B were saved as "finaldata_forfig2.correlations.Rdata".  Using this data, you can get the
 translation seletion landscape of 61 codons caused by virus infection.
 
-Note that, the pattern in figs5c calculated by 8 highly expression genes also showed the patterns we displayed in fig2 and fig5 can't be explained by the small genome of virus.  Again, if you want to know the distinct logic, please see our paper.
+Note that, the pattern in figs5c calculated by 8 highly expression genes also showed the patterns we displayed in fig2 and figs5 can't be explained by the small genome of virus.  Again, if you want to know the distinct logic, please see our paper.
 
 3)
 
