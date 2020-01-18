@@ -10,7 +10,6 @@ host <- unique(c(associate$symptomatic %>% as.vector(),associate$natural %>% as.
 load("~/codonpaper/review/allhumangenome.Rdata")
 ##xij of host gene
 load("~/codonpaper/review/codon.Rdata")
-
 xijofhost <- mclapply(mc.cores = 17,1:17,function(i){
   special <- unique(allhumangenome$spe)[i]
   myseq <- allhumangenome %>% dplyr::filter(spe==special)
@@ -35,7 +34,6 @@ xijofhost <- mclapply(mc.cores = 17,1:17,function(i){
   xij$special <- as.vector(xij$special)
   xij
 }) %>% rbind.fill()
-
 save(xijofhost,file = "~/codonpaper/code and data/1_2.xijofhost.finall.Rdata")
 load("~/codonpaper/code and data/1_2.xijofhost.finall.Rdata")
 ## dp and or
@@ -88,18 +86,10 @@ VNS_DP_OR <- mclapply(mc.cores = 52,1:nrow(associate),function(x){
 }) %>% rbind.fill()
 save(VNS_DP_OR,file = "~/codonpaper/code and data/fig4.vns_realtranscriptome.Rdata")
 load("~/codonpaper/code and data/fig4.vns_realtranscriptome.Rdata")
-VNS_DP_OR %>% ggplot(aes(Dpvn+Dpvs,Dpvs-Dpvn)) + geom_point()
-
-VNS_DP_OR %>% ggplot(aes(Dpvn+Dpvs,OR)) + geom_point()
-VNS_DP_OR %>% dplyr::filter(Dpvn/Dpvs>1) %>% nrow()
-VNS_DP_OR %>% dplyr::filter(Dpvn/Dpvs<1) %>% nrow()
-
-VNS_DP_OR %>% dplyr::filter(OR>1) %>% nrow()
-VNS_DP_OR %>% dplyr::filter(OR<1) %>% nrow()
-
+##group by translation selection
+##Dp
 max(VNS_DP_OR$Dpvn+VNS_DP_OR$Dpvs)
 min(VNS_DP_OR$Dpvn+VNS_DP_OR$Dpvs)
-
 tmp = seq(0.9,0.3,by=-.2)
 alldata <- mclapply(mc.cores = 20,1:length(tmp),function(x){
   VNS_DP_OR %>% dplyr::filter(Dpvn+Dpvs <= tmp[x]) %>% 
@@ -116,9 +106,7 @@ ggplot(data = alldata,aes(x=type,y=meanofdpvnjiandpvs))+
        y=expression(paste("Average ",italic("D")[P](V,N)/italic("D")[P](V,S)))) +
   #scale_y_continuous(limits = c(0,.55)) +
   style.print()
-
-
-
+##or
 allor <- mclapply(mc.cores = 4,1:length(tmp),function(x){
   associate <- VNS_DP_OR %>% dplyr::filter(Dpvn+Dpvs < tmp[x])
   #names(associate) <- c("virus","symptomatic","natural")
@@ -133,15 +121,12 @@ allor <- mclapply(mc.cores = 4,1:length(tmp),function(x){
     dplyr::summarize(mean=mean(n),sd=sd(n)) %>% 
     as.data.frame()
 }) %>% rbind.fill()
-
 ggplot(data = allor,aes(x=type,y=mean))+
   geom_bar(stat = "identity")+
   geom_errorbar(aes(ymax=mean+sd,ymin=mean-sd),width=0.4)+
   labs(x=expression(italic("D")[P](V,S)+italic("D")[P](V,N)),
        y="Fraction of VNS-trio with OR > 1") +
   style.print()
-
-
 
 ##fig4c and figs9
 library(readr);
@@ -169,7 +154,7 @@ hostype <- data.frame(host=mydncu$host %>% as.vector() %>% unique(),
                              rep("Natural host",5),"Symptomatic host", rep("Natural host",4)))
 mydncu$hostype <- hostype$type[match(mydncu$host,hostype$host)]
 mydncu$hostype <- factor(mydncu$hostype, levels=c("Symptomatic host","Unknown","Natural host"))
-#mydncu$hostype <- as.vector(mydncu$hostype)
+##Dp calculated by transcriptome
 Dncu1 <- mydncu %>%  ggplot() +
   geom_point(aes(x=human1,y=wenzi1,color=hostype),size=0.5) +
   geom_point(data = base :: subset(mydncu, hostype == 'Natural host'),aes(x=human1,y=wenzi1,color=hostype),size=0.5) +
@@ -183,8 +168,7 @@ Dncu1 <- mydncu %>%  ggplot() +
   scale_colour_manual(values=c("#6495ED","#5B88A0","red"))+
   theme(legend.position = "none")
 mydncu %>% group_by(virusname) %>% dplyr::summarize(percent=length(which(wenzi1/human1>1))/length(wenzi1))
-
-
+##Dp calculated by tAI of codons
 Dncu2 <- mydncu %>%  ggplot() +
   geom_point(aes(x=human2,y=wenzi2,color=hostype)) +
   geom_point(data = base :: subset(mydncu, hostype == 'Natural host'),aes(x=human2,y=wenzi2,color=hostype)) +
@@ -197,8 +181,7 @@ Dncu2 <- mydncu %>%  ggplot() +
   style.print()+
   scale_colour_manual(values=c("#6495ED","#5B88A0","red"))+
   theme(legend.position = "none")
-
-
+##print function
 style.print <- function() {
   theme_classic() +
     theme(legend.text=element_text(size=unit(12,"bigpts")),
@@ -211,7 +194,6 @@ style.print <- function() {
           strip.text=element_text(size=unit(14,"bigpts")),
           panel.background=element_rect(fill="white"));
 }
-
 ### dncu function, it means Dp in the NEE paper
 library(dplyr);
 library(plyr);
@@ -224,7 +206,6 @@ codonfre$frewenzi <- codonfreq$Aedes$fraction[match(as.vector(codonfre$codon),as
 codonfre$frevirus <- codonfreq$Dengue_virus_2$fraction[match(as.vector(codonfre$codon),as.vector(codonfreq$Dengue_virus_2$codon))]
 codonfreorigin <- codonfre[,-(3:4)]
 names(codonfreorigin)[3] <- "frehuman"
-##RE site for alternative sysnomouse codon, not change 3 aa near the RE site
 ##codon list table
 codontable0 <- codonfreorigin[,(1:2)]
 codontable1 <- data.frame(aa=c("M","W"),
@@ -239,7 +220,6 @@ tAIofcodonhuman$wi <- tAIofcodonhuman$Wi/max(tAIofcodonhuman$Wi)
 meanhuman <- tAIofcodonhuman %>% group_by(aa) %>% dplyr::summarize(all=sum(wi))
 tAIofcodonhuman$all <- meanhuman$all[match(tAIofcodonhuman$aa,meanhuman$aa)]
 tAIofcodonhuman$tai <- tAIofcodonhuman$wi/tAIofcodonhuman$all
-
 tAIofcodonAno$aa <- codon$aa[match(as.vector(tAIofcodonAno$codon),codon$codon)]
 tAIofcodonAno <- tAIofcodonAno %>% dplyr::filter(!(is.na(aa)) & !(aa %in% c("M","W")))
 tAIofcodonAno$wi <- tAIofcodonAno$Wi/max(tAIofcodonAno$Wi)
@@ -256,23 +236,18 @@ dncu <- function(geneseq){
   codonfrenew$frevirus <- virusfre$frevirus[match(as.vector(codonfrenew$codon),as.vector(virusfre$seqnew))]
   codonfrenew$taihum <- tAIofcodonhuman$tai[match(as.vector(codonfrenew$codon),as.vector(tAIofcodonhuman$codon))]
   codonfrenew$taiAno <- tAIofcodonAno$tai[match(as.vector(codonfrenew$codon),as.vector(tAIofcodonAno$codon))]
-
   Di_aa <- codonfrenew %>% group_by(aa) %>%
     dplyr::summarize(aa_human1 = (sum((frehuman-frevirus)^2))^0.5,
                      aa_wenzi1 = (sum((frewenzi-frevirus)^2))^0.5,
                      aa_human2 = (sum((taihum-frevirus)^2))^0.5,
                      aa_wenzi2 = (sum((taiAno-frevirus)^2))^0.5) %>%
     as.data.frame()
-
   humandncu1 <- (Di_aa$aa_human1 %>% prod())^(1/nrow(Di_aa))
   wenzidncu1 <- (Di_aa$aa_wenzi1 %>% prod())^(1/nrow(Di_aa))
   humandncu2 <- (Di_aa$aa_human2 %>% prod())^(1/nrow(Di_aa))
   wenzidncu2 <- (Di_aa$aa_wenzi2 %>% prod())^(1/nrow(Di_aa))
   c(humandncu1,wenzidncu1,humandncu2,wenzidncu2)
 }
-
-
+##save all data
 save(alldata,allor,mydncu,file = "~/codonpaper/code and data/allcombined.fig4.Rdata")
-
-
 
