@@ -275,7 +275,7 @@ ggplot(dfCodon.yeast,aes(log(RTSv,10),tdt)) +
   scale_x_continuous(limits = c(2,4),breaks=c(2,3,4))
 
 
-##fig1C or s2a
+##fig1C
 load("/mnt/data3/disk/phil/acting/virusTranslation/riboTranslocate/data/riboSeq_Justin2014/Graph/13.RData");
 load("/mnt/data3/disk/phil/acting/virusTranslation/riboTranslocate/data/riboSeq_Justin2014/Graph/13.3.RData");
 load("/mnt/data3/disk/phil/acting/virusTranslation/riboTranslocate/data/riboSeq_Justin2014/Graph/18.2.slow_by_shortage.RRT.RData");
@@ -283,25 +283,25 @@ load("/mnt/data3/disk/phil/acting/virusTranslation/riboTranslocate/data/riboSeq_
 ##rtsv=conofvirus/conofyeast
 mydata <- plotCc2$data %>% as.data.frame()
 load("/mnt/data/home/phil/acting/virusTranslation/01.scratch/datJustin.Sc-Lys.RData")
-TA <- datJustin %>%
+fig1c <- datJustin %>%
   group_by(orf) %>%
-  dplyr::filter(length(codon)>70 & pos > 20 & pos < (length(codon)-20) & !(chrom %in% c("NC_003745","SCU01060"))) %>%
-  dplyr::summarize(TA=mean(ribo,trim=0.25,na.rm=T)) %>%
-  as.data.frame() 
-datJustin$TA <- TA$TA[match(datJustin$orf,TA$orf)]
-conofyeast <- datJustin %>% dplyr::filter(!(is.na(TA))) %>% group_by(codon) %>%
-  dplyr::summarize(conofyeast=sum(TA)) %>% as.data.frame()
-mydata$conofyeast <- conofyeast$conofyeast[match(mydata$codon,conofyeast$codon)]
-mydata$rtsvofyeast <- mydata$cc/mydata$conofyeast
+  dplyr::filter(length(codon)>70 & pos > 20 & pos < (length(codon)-20) & (chrom %in% c("NC_003745","SCU01060"))) %>%
+  dplyr::mutate(TA=mean(ribo,trim=0.25,na.rm=T)) %>% 
+  group_by(codon) %>% 
+  dplyr::summarize(consump=sum(TA)) %>%
+  dplyr::mutate(tai = tAIofcodonyeast$wi[match(codon,tAIofcodonyeast$codon)],
+                rrt = mydata$rrt[match(codon,mydata$codon)]) %>%
+  dplyr::mutate(RTSv=consump/tai) %>%
+  as.data.frame()
 
-p <- format(cor.test(mydata$rtsvofyeast,mydata$rrt,method = "spearman")$p.value, digits = 3)
-rho <- format(cor.test(mydata$rtsvofyeast,mydata$rrt,method = "spearman")$estimate[[1]], digits = 3)
-ggplot(mydata,aes(log10(rtsvofyeast),rrt)) +
-  labs(title=paste("Rho=",rho,", P=",p),x=expression(RTS[v]),y="Relative decoding time") +
+p <- format(cor.test(fig1c$RTSv,fig1c$rrt,method = "spearman")$p.value, digits = 3)
+rho <- format(cor.test(fig1c$RTSv,fig1c$rrt,method = "spearman")$estimate[[1]], digits = 3)
+ggplot(fig1c,aes(RTSv,rrt)) +
+  labs(title=paste("Rho=",rho,", P=",p),x=expression(RTS[v]),x="Relative tRNA shortages \n caused by viral translation",y="Relative decoding time") +
   style.print()+
   geom_smooth(method="lm",se=FALSE)+
   geom_point() +
-  scale_x_continuous(limits = c(-3.3,-0.7),breaks=c(-3,-2,-1))
+  scale_x_continuous(trans = "log10",limits = c(100,10000),breaks=c(100,1000,10000))
 
 ##rtsv=conofvirus/conofyeast figS4a
 load("/mnt/data/home/phil/acting/virusTranslation/01.scratch/04.result.yeast.RData")
