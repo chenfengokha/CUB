@@ -10,10 +10,8 @@ library(stats4)
 library(emg)
 library(reshape2)
 library(tidyr)
-##ribo-human
-
+##load the human-flu ribo density data
 a02 <- read.table("/mnt/data/home/phil/acting/virusTranslation/03.flu/05.res/SRR3623932.trim.rRNA_unmap.tophat.cov")
-
 a22 <- read.table("/mnt/data/home/phil/acting/virusTranslation/03.flu/05.res/SRR3623937.trim.rRNA_unmap.tophat.cov")
 rawdata1 <- rbind(a02 %>% cbind(time=0,type="36"),a22 %>% cbind(time=2,type="37"))
 names(rawdata1)[1:7] <- c("cds","chr","sitechr","codon","pos","strand","ribo")
@@ -22,18 +20,15 @@ rawdata1$cds <- as.vector(rawdata1$cds)
 rawdata1$type <- as.vector(rawdata1$type)
 ##virus ribo
 virusribo <- rawdata1 %>% dplyr::filter(chr %in% c("EF467817.1", "EF467818.1", "EF467819.1", "EF467820.1", "EF467821.1", "EF467822.1", "EF467823.1", "EF467824.1")) %>% separate(cds,c("cds","2"))
-
 ##human ribo
 human <- paste("chr",c(1:22,"X","Y","M"),sep = "")
 mydata1_2 <- rawdata1 %>% dplyr::filter(chr %in% human) %>% separate(cds,c("cds","2"))
-
-#id
+#select the longest transcript of each gene
 load("~/codonpaper/review/allhumangenome.Rdata")
 allhumangenome %>% as.data.frame() %>% group_by(spe,name) %>% dplyr::filter(spe=="Homo_sapiens" & leng==max(leng)) -> ttt
 idtrans <- ttt[,3:4] %>% group_by(name) %>% dplyr::summarize(namet=name1[1])
 aa <- mydata1_2 %>% dplyr::filter(cds %in% idtrans$namet)
 aa -> mydata1_2
-
 ##TA ratio
 mydatah <- mydata1_2 %>%
   dplyr::filter(time==2) %>%
@@ -46,8 +41,7 @@ mydatav <- virusribo %>%
   dplyr::filter((length(codon) > 70) & (pos > 20) & (pos < (length(codon)-20))) %>%
   dplyr::summarize(txActi=mean(ribo,trim=0.25,na.rm=T))
 tt <- (mydatav$txActi %>% mean())/(mydatah$txActi %>% mean())
-
-##TDT of codons
+##function to calculated typical decoding time
 emgnb.mle <- function(x, expr, lower = NA, upper = NA) {
   if(length(x) != length(expr)) {
     stop("'x' and 'expr' must have the same length");
@@ -59,7 +53,6 @@ emgnb.mle <- function(x, expr, lower = NA, upper = NA) {
     expr <- expr[-rmIdx];
     normX <- normX[-rmIdx];
   }
-  
   ## Limiting the space to search is very important here.
   ## Since the waiting time cannot be negative, the real sigma is expected to be < 1/4 of mu, which approximated by median(normX)
   if(is.na(lower)) {
@@ -76,7 +69,6 @@ emgnb.mle <- function(x, expr, lower = NA, upper = NA) {
   },
   method = "L-BFGS-B",  lower = lower,  upper = upper,  start = startL,default.start=F  );
 }
-
 emgnb.nllik <- function(x,expr,size,mu,sigma,lambda) {
   sigma <- max(c(sigma,1e-3));
   lambda <- max(c(lambda,1e-3));
@@ -100,8 +92,7 @@ emgnb.nllik <- function(x,expr,size,mu,sigma,lambda) {
     );
   }
 }
-
-# ##calculate TDT and virus consumption
+##calculate TDT and virus consumption
 dfHuman.all <- mydata1_2 %>%
   group_by(time,cds) %>%
   dplyr::mutate(txActi=mean(ribo,trim=0.25,na.rm=T));  ## calculate translational activity
@@ -123,7 +114,6 @@ dfAllRes <- dfHuman.all %>%
   dplyr::filter((length(codon) > 70) & (pos > 20) & (pos < (length(codon)-20))) %>% ## remove sites near ramp and termination
   split(paste0(.$time,.$codon)) %>%
   mclapply(mc.cores=60,function(x){
-    #lapply(function(x){
     if(dim(x)[1] < 10) {
       data.frame(NULL)
     } else {
@@ -135,13 +125,10 @@ dfVirusConsump.h$codon <- as.vector(dfVirusConsump.h$codon)
 dfHuman.all$codon <- as.vector(dfHuman.all$codon)
 dfAllRes$codon <- as.vector(dfAllRes$codon)
 save(mydata1_2,virusribo,mydatah,mydatav,tt,dfHuman.all,dfAllRes,dfVirusConsump.h,file="~/codonpaper/code and data/fig2.finaldata.Rdata")
-
 load("~/codonpaper/code and data/fig2.finaldata.Rdata")
-
 mydf <- dfHuman.all %>% dplyr::filter(time==2)
 mydf$txActi <- mydatah$txActi[match(mydf$cds,mydatah$cds)]
 mydf <- mydf %>% dplyr::filter(!is.na(txActi)) %>% group_by(codon) %>% dplyr::summarize(conofhuman=sum(txActi)) %>% as.data.frame()
-
 dfVirusConsump.h <- dfVirusConsump.h %>% dplyr::filter(!(codon %in% c("TGA","TAG","TAA")) & time==2) %>% as.data.frame()
 dfVirusConsump.h$conofhuman <- mydf$conofhuman[match(dfVirusConsump.h$codon,mydf$codon)]
 VtRNA0 <- unique(dfVirusConsump.h[,c(2,4)])
@@ -152,24 +139,24 @@ VtRNA0$conofhuman <- 1
 virustRNAconsumption <- rbind(VtRNA0,dfVirusConsump.h)
 virustRNAconsumption$TDT <- dfAllRes$mu[match(paste(virustRNAconsumption$codon,virustRNAconsumption$time),paste(dfAllRes$codon,dfAllRes$time))]
 virustRNAconsumption$rtsvofhuman <- virustRNAconsumption$consump/virustRNAconsumption$conofhuman
-
+##calculated the sensitivity of codons after the virus infection, here slope is sensitivity
 tmp2 <- mclapply(mc.cores=20,1:length(unique(virustRNAconsumption$codon)),function(x){
   mdf <- virustRNAconsumption %>% dplyr::filter(codon==unique(virustRNAconsumption$codon)[x])
   slop1 <- (mdf$TDT[2]/mdf$TDT[1])/mdf$consump[2]
   data.frame(codon=unique(mdf$codon),tAI=unique(mdf$tai),t2t0=(mdf$TDT[2]/mdf$TDT[1]),c2=mdf$consump[2],conofhuman=mdf$conofhuman[2],Sensitivity=slop1)
 }) %>% rbind.fill()
 ##save the final data of fig2 and fig2-related
-#save(tmp2,virustRNAconsumption,file ="~/codonpaper/code and data/finaldata_forfig2.correlations.Rdata")
+save(tmp2,virustRNAconsumption,file ="~/codonpaper/code and data/finaldata_forfig2.correlations.Rdata")
 p <- format(cor.test(tmp2$Sensitivity,tmp2$tAI,method = "spearman")$p.value, digits = 3)
 rho <- format(cor.test(tmp2$Sensitivity,tmp2$tAI,method = "spearman")$estimate[[1]], digits = 3)
 source("~/Rfunction/style.print.R")
-##fig2b
+##draw Fig.2b
 ggplot(data=tmp2, aes(x=Sensitivity,y=tAI))+
   geom_point() + 
   labs(title=paste("Rho=",rho,", P=",p),x="Sensitivity",y="tRNA supply of codons") +
   style.print()+
   geom_smooth(method="lm",se=FALSE)
-##figs5b
+##draw Fig.S5b
 p <- format(cor.test(tmp2$Sensitivity,tmp2$conofhuman,method = "spearman")$p.value, digits = 3)
 rho <- format(cor.test(tmp2$Sensitivity,tmp2$conofhuman,method = "spearman")$estimate[[1]], digits = 3)
 ggplot(data=tmp2, aes(x=Sensitivity,y=conofhuman))+
@@ -177,39 +164,33 @@ ggplot(data=tmp2, aes(x=Sensitivity,y=conofhuman))+
   labs(title=paste("Rho=",rho,", P=",p),x="Sensitivity",y="tRNA supply of codons") +
   style.print()+
   geom_smooth(method="lm",se=FALSE)
-
-#virustRNAconsumption <- virustRNAconsumption %>% dplyr::filter(!(codon %in% c("ATG","TGG")))
 new2a <- virustRNAconsumption %>% dplyr::filter(time==2)
 p <- format(cor.test(new2a$RTSv,new2a$TDT,method = "spearman")$p.value, digits = 3)
 rho <- format(cor.test(new2a$RTSv,new2a$TDT,method = "spearman")$estimate[[1]], digits = 3)
-##fig2a
+##Fig.2a
 ggplot(new2a,aes(RTSv,TDT)) + geom_point()+
   geom_smooth(method="lm",se=FALSE)+
   labs(title=paste("Rho=",rho,", P=",p),x="Relative tRNA shortages \n caused by viral translation",y="Typical decoding time") +
   style.print()+
-  #scale_x_log10()
   scale_x_continuous(trans = "log10")
-##figs5a
+##Fig.S5a
 newS2a <- virustRNAconsumption %>% dplyr::filter(time==2)
 p <- format(cor.test(newS2a$rtsvofhuman,newS2a$TDT,method = "spearman")$p.value, digits = 3)
 rho <- format(cor.test(newS2a$rtsvofhuman,newS2a$TDT,method = "spearman")$estimate[[1]], digits = 3)
-
 ggplot(newS2a,aes(rtsvofhuman,TDT)) + geom_point()+
   geom_smooth(method="lm",se=FALSE)+
   labs(title=paste("Rho=",rho,", P=",p),x="Relative tRNA shortages \n caused by viral translation",y="Typical decoding time") +
   style.print()
 
-##eight human gene,figs5c
+##eight human gene,Fig.S5c
 load("~/codonpaper/code and data/fig2.finaldata.Rdata")
 human <- paste("chr",c(1:22,"X","Y","M"),sep = "")
 mydatah <- mydata1_2 %>% 
-  #dplyr::filter(time==2) %>%
   group_by(cds,time) %>%
   dplyr::filter(length(codon)>70 & pos > 20 & pos < (length(codon)-20) & chr %in% human) %>%
   dplyr::summarize(mfj=mean(ribo,trim=0.25,na.rm=T)) %>%
   as.data.frame() %>% arrange(desc(mfj))
 highTAgenehuman <- (mydatah %>% dplyr::filter(time==0))[1:500,]$cds
-
 ##con of human gene
 mydf <- mydata1_2 %>% dplyr::filter(chr %in% human)
 mydf$TA <- mydatah$mfj[match(paste(mydf$cds,mydf$time),paste(mydatah$cds,mydatah$time))]
@@ -217,9 +198,7 @@ load("/mnt/data/home/chenfeng/codonpaper/tAIcodhum.Rdata")
 tAIofcodonhuman$codon <- as.vector(tAIofcodonhuman$codon)
 tAIofcodonhuman$wi <- tAIofcodonhuman$Wi/max(tAIofcodonhuman$Wi)
 mydf$tai <- tAIofcodonhuman$wi[match(mydf$codon,tAIofcodonhuman$codon)]
-# load("/mnt/data/home/phil/acting/virusTranslation/01.scratch/04.result.human.RData")
-#save(tmp2,virustRNAconsumption,file ="~/codonpaper/code and data/finaldata_forfig2.correlations.Rdata")
-
+##randomly select eight gene for 1000 times
 aa <- mclapply(mc.cores = 60,1:1000,function(x){
   a <- mydf %>% dplyr::filter(!(is.na(TA)) & cds %in% sample(highTAgenehuman,8,replace = F)) %>% 
     group_by(codon,tai,time) %>% 
@@ -238,8 +217,6 @@ aa <- mclapply(mc.cores = 60,1:1000,function(x){
   data.frame(r2atime0=rho2a$rho[which(rho2a$time==0)],r2atime2=rho2a$rho[which(rho2a$time==2)],rho2b,p2b)
 }) %>% rbind.fill()
 source("~/Rfunction/style.print.R")
-#save(aa,file = "~/codonpaper/code and data/aa.eight.humangeneforfig2.Rdata")
-load("~/codonpaper/code and data/aa.eight.humangeneforfig2.Rdata")
 data.frame(mean=c(mean(aa$r2atime2),mean(aa$rho2b)),sd=c(sd(aa$r2atime2),sd(aa$rho2b)),type=c("2","1")) %>%
   ggplot(aes(type,mean)) + 
   geom_bar(stat = "identity",fill=gray.colors(11)[7]) +
