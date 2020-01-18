@@ -21,6 +21,6 @@ All final data used to draw the plot was combined in "allcombinedfig3.Rdata".
 
 4)Fig.4 and Fig.S9
 
-"Fig.4 and Fig.4-related.R" is the code for Fig.4 and Fig.S9.  From this code, we calculated the Dpvn and Dpvs values of the 52 VNS-trio and all mutants of Dengue and Zika virus.  
+"Fig.4 and Fig.4-related.R" is the code for Fig.4 and Fig.S9.  From this code, we did the MH-test for 52 VNS-trio, and calculated the Dpvn and Dpvs values of the 52 VNS-trio and all mutants of Dengue and Zika virus.  
 
 All final data used to draw the plot was combined in "allcombinedfig4.Rdata".
